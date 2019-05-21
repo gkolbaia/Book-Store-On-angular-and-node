@@ -82,7 +82,7 @@ router.post('/login', (req, res) => {
         }
     })
 });
-router.get('/sada', verifyToken, (req, res) => {
+router.get('/sada', verifyToken.verifyToken, (req, res) => {
     var admin = {
         userName: 'giorgikolbaia',
         password: '12345',
@@ -108,7 +108,7 @@ router.get('/sada', verifyToken, (req, res) => {
         };
     });
 });
-router.get('/getLoggedInUser', verifyToken, (req, res) => {
+router.get('/getLoggedInUser', verifyToken.verifyToken, (req, res) => {
     const id = getUserId(req, res);
     AdminModel.findOne({ _id: objectId(id) }, (err, user) => {
         if (err) {

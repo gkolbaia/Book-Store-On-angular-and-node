@@ -79,6 +79,10 @@ const bookSchema = new Schema({
         type: Date,
         required: true,
         default: Date.now()
+    },
+    posterPath: {
+        type: String,
+        required: true,
     }
 });
 mongoose.model('books', bookSchema);

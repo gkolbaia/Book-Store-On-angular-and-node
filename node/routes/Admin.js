@@ -1,9 +1,10 @@
 const express = require('express');
 const router = express.Router();
-
 const mongoose = require('mongoose');
-
-
+const multipart = require('multiparty')
+const readChunk = require('read-chunk')
+const fileType = require('file-type');
+const fs = require('fs')
 
 
 require('../models/books');
@@ -12,7 +13,9 @@ require('../models/categories');
 const CategoryModel = mongoose.model('category');
 require('../models/author');
 const AuthorModel = mongoose.model('author');
-
+const upload = require('../helpers/imageUpload');
+const fileChecker = require('../helpers/fileChecker')
+const objectId = mongoose.Types.ObjectId;
 
 
 
@@ -29,6 +32,19 @@ router.get('/getBooks', (req, res) => {
         };
     });
 });
+router.post('/getauthor', (req, res) => {
+    AuthorModel.findById({ _id: objectId(req.body._id) }, (err, author) => {
+        if (err) {
+            console.log(err);
+        } else {
+            if (author) {
+                res.status(200).send(author);
+            } else {
+                res.status(404).send({ message: 'author not found' })
+            }
+        }
+    })
+})
 router.get('/getBookCategories', (req, res) => {
     CategoryModel.find({}, (err, categories) => {
         if (err) {
@@ -61,27 +77,35 @@ router.get('/getauthors', (req, res) => {
     AuthorModel.find({})
         .then(authors => { res.status(200).send(authors); })
         .catch(err => console.log(err));
-})
+});
 router.post('/addbook', (req, res) => {
-    BookModel.findOne({ name: req.name }, (err, book) => {
+    var form = new multipart.Form();
+    upload(req, res, (err) => {
         if (err) {
-            console.log(err)
+            console.log(err);
+        } else if (req.file == undefined) {
+            console.log('undefined');
         } else {
-            if (book) {
-                res.status(409).send({ message: 'book already exists' })
-            } else {
-                new BookModel(req.body)
-                    .save()
-                    .then(author => res.status(200).send(author))
-            };
-        };
+            var bookToSave = JSON.parse(req.body.book);
+            bookToSave.posterPath = req.file.path;
+            BookModel.findOne({ name: bookToSave.name }, (err, book) => {
+                if (err) {
+                    console.log(err)
+                } else if (book) {
+                    res.status(409).send({ message: 'book already exists' })
+                } else {
+                    new BookModel(bookToSave)
+                        .save()
+                        .then(book => res.status(200).send(book))
+                }
+            })
+        }
     });
 });
 router.post('/autorSearch', (req, res) => {
     if (req.body.term !== '') {
         AuthorModel.find({ name: { $regex: req.body.term.toLowerCase() } }, (err, authors) => {
-            if (err) {
-            } else {
+            if (err) { } else {
                 if (authors) {
                     res.json(authors);
                 }
@@ -91,5 +115,74 @@ router.post('/autorSearch', (req, res) => {
         res.json([])
     }
 
+});
+router.post('/saveauthorposter', (req, res) => {
+    upload(req, res, (err) => {
+        if (err) {
+            console.log(err);
+            res.status(403).send({ message: err });
+        } else {
+            if (req.file == undefined) {
+                console.log('undefined');
+            } else {
+                AuthorModel.findOne({ name: req.file.originalname.split('.')[0] }, (err, author) => {
+                    if (err) {
+                        console.log(err);
+                    } else {
+                        author.imagePath = req.file.path;
+                        author.save()
+                    }
+                });
+                res.send(req.file);
+            }
+        }
+    });
+});
+router.post('/editauthor', (req, res) => {
+    AuthorModel.findById(objectId(req.body._id), (err, author) => {
+        if (err) {
+            console.log(err);
+        } else {
+            if (!author) {
+                res.status(404).send({ message: 'Something went wrong, we can not find that author' });
+            } else {
+                for (const key in req.body) {
+                    if (req.body.hasOwnProperty(key)) {
+                        if (key !== '_id') {
+                            author[key] = req.body[key];
+                        }
+                    }
+                }
+                author.save((err, savedAuthor) => {
+                    if (err) {
+                        console.log(err);
+                    } else {
+                        res.status(200).send(savedAuthor)
+                    }
+                });
+            }
+        }
+    })
+});
+router.post('/editauthorposter', (req, res) => {
+    upload(req, res, (err) => {
+        if (err) {
+            console.log(err);
+        } else {
+            if (req.file == undefined) {
+                console.log('undefined');
+            } else {
+                AuthorModel.findOne({ name: req.file.originalname.split('.')[0] }, (err, author) => {
+                    if (err) {
+                        console.log(err);
+                    } else {
+                        author.imagePath = req.file.path;
+                        author.save()
+                    }
+                });
+                res.status(200).send(req.file)
+            }
+        }
+    });
 });
 module.exports = router;

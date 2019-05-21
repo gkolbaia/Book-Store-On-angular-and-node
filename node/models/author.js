@@ -29,12 +29,17 @@ const AuthorSchema = new Schema({
     },
     dateOfDeath: {
         type: Date,
-        required:false
+        required: false
     },
     categories: {
         type: [CategoriesSchema],
         required: false,
         default: []
+    },
+    imagePath: {
+        type: String,
+        required: false,
+        default: ''
     }
 });
 mongoose.model('author', AuthorSchema);

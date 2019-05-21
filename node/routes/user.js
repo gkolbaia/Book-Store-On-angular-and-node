@@ -1,11 +1,13 @@
 const express = require('express')
 const router = express.Router();
 const mongoose = require('mongoose');
+const fs = require('fs');
 
 require('../models/author');
 require('../models/books');
 const AuthorModel = mongoose.model('author');
 const BooksModel = mongoose.model('books');
+const objectId = mongoose.Types.ObjectId;
 
 
 
@@ -48,7 +50,7 @@ router.post('/getcurrentauthor', (req, res) => {
         }
     });
 });
-router.post('/getcurrentbook', (req, res) => {
+router.post('/getbookbyname', (req, res) => {
     BooksModel.findOne({ name: req.body.name }, (err, book) => {
         if (err) {
             console.log(err);
@@ -60,7 +62,55 @@ router.post('/getcurrentbook', (req, res) => {
             }
         }
     })
-})
-
-
-module.exports = router
+});
+router.post('/getbooksbyauthor', (req, res) => {
+    BooksModel.find({ "author._id": objectId(req.body._id) }, (err, books) => {
+        if (err) {
+            console.log(err)
+        } else {
+            if (books) {
+                res.status(200).send(books);
+            } else {
+                res.status(404).send({ message: 'We don thave Books of this author' })
+            }
+        }
+    })
+});
+router.post('/getbooksbycategory', (req, res) => {
+    BooksModel.find({ categories: { $in: [req.body.categories] } }, (err, books) => {
+        if (err) {
+            console.log(err)
+        } else {
+            if (books) {
+                res.status(200).send(books);
+            } else {
+                res.status(404).send({ message: 'could not find books of that category' })
+            }
+        }
+    })
+});
+router.get('/getbookposter', (req, res) => {
+    fs.readFile('./' + req.query.path, (err, data) => {
+        res.contentType('image/jpeg');
+        res.send(data);
+    });
+});
+router.post('getauthorposter', (req, res) => {
+    fs.readFile('./' + req.query.path, (err, data) => {
+        res.contentType('image/jpeg');
+        res.send(data);
+    })
+});
+router.get('/getbooks', (req, res) => {
+    BooksModel.find({}, (err, books) => {
+        if (err) {
+            res.status(404).send({ message: 'There is no books' });
+        } else {
+            books.sort((a, b) => {
+                return new Date(b.bookAddingDate) - new Date(a.bookAddingDate)
+            })
+            res.status(200).send(books.slice(0, 10));
+        }
+    });
+});
+module.exports = router;
