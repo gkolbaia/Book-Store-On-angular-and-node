@@ -44,6 +44,19 @@ router.post('/getauthor', (req, res) => {
             }
         }
     })
+});
+router.post('/getbookbyid', (req, res) => {
+    BookModel.findById({ _id: objectId(req.body._id) }, (err, book) => {
+        if (err) {
+            console.log(err);
+        } else {
+            if (book) {
+                res.status(200).send(book);
+            } else {
+                res.status(404).send({ message: 'author not found' })
+            }
+        }
+    })
 })
 router.get('/getBookCategories', (req, res) => {
     CategoryModel.find({}, (err, categories) => {
@@ -185,4 +198,51 @@ router.post('/editauthorposter', (req, res) => {
         }
     });
 });
+router.post('editbook', (req, res) => {
+    BookModel.findById(objectId(req.body._id), (err, book) => {
+        if (err) {
+            console.log(err);
+        } else {
+            if (!author) {
+                res.status(404).send({ message: 'Something went wrong,we can not find that book' });
+            } else {
+                for (const key in req.body) {
+                    if (req.body.hasOwnProperty(key)) {
+                        if (key !== '_id') {
+                            book[key] = req.body[key]
+                        }
+                    }
+                };
+                book.save((err, editedBook) => {
+                    if (err) {
+                        console.log(err);
+                    } else {
+                        res.status(200).send(editedBook);
+                    }
+                })
+            }
+        }
+    })
+});
+router.post('editbookposter', (req, res) => {
+    upload(req, res, (err) => {
+        if (err) {
+            console.log(err);
+        } else {
+            if (req.file == undefined) {
+                console.log('undefined');
+            } else {
+                BookModel.findOne({ name: req.file.originalname.split('.')[0] }, (err, book) => {
+                    if (err) {
+                        console.log(err);
+                    } else {
+                        book.posterPath = req.file.path;
+                        book.save()
+                    }
+                });
+                res.status(200).send(req.file)
+            }
+        }
+    });
+})
 module.exports = router;
