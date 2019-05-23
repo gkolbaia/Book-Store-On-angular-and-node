@@ -198,12 +198,12 @@ router.post('/editauthorposter', (req, res) => {
         }
     });
 });
-router.post('editbook', (req, res) => {
+router.post('/editbook', (req, res) => {
     BookModel.findById(objectId(req.body._id), (err, book) => {
         if (err) {
             console.log(err);
         } else {
-            if (!author) {
+            if (!book) {
                 res.status(404).send({ message: 'Something went wrong,we can not find that book' });
             } else {
                 for (const key in req.body) {
@@ -224,7 +224,7 @@ router.post('editbook', (req, res) => {
         }
     })
 });
-router.post('editbookposter', (req, res) => {
+router.post('/editbookposter', (req, res) => {
     upload(req, res, (err) => {
         if (err) {
             console.log(err);
@@ -244,5 +244,5 @@ router.post('editbookposter', (req, res) => {
             }
         }
     });
-})
+});
 module.exports = router;
